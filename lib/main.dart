@@ -1,7 +1,6 @@
 import 'dart:async';
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:battery_plus/battery_plus.dart';
 import 'package:screen_state/screen_state.dart';
 
 void main() => runApp(const MyApp());
@@ -39,74 +38,139 @@ class AnaEkran extends StatefulWidget {
   _AnaEkranState createState() => _AnaEkranState();
 }
 
+class ScreenStateEventEntry {
+  ScreenStateEvent event;
+  DateTime? time;
+
+  ScreenStateEventEntry(this.event) {
+    time = DateTime.now();
+  }
+}
+
 class _AnaEkranState extends State<AnaEkran> {
-  var battery = Battery();
-  int percentage = 0;
-  late Timer timer;
-  BatteryState batteryState = BatteryState.full;
-  late StreamSubscription streamSubscription;
+  Screen _screen = Screen();
+  late StreamSubscription<ScreenStateEvent> _subscription;
+  bool started = false;
+  List<ScreenStateEventEntry> _log = [];
+  static const countdownDuration = Duration(hours: 3, minutes: 0, seconds: 0);
+  Duration duration = Duration();
+  Timer? timer;
 
-  @override
+  bool isCountdown = false;
+
   void initState() {
-    // TODO: implement initState
     super.initState();
-    getBatteryPercentage();
-    getBatteryState();
+    initPlatformState();
+    startTimer();
+    reset();
+  }
 
-    timer = Timer.periodic(Duration(seconds: 5), (timer) {
-      getBatteryPercentage();
+  Future<void> initPlatformState() async {
+    startListening();
+  }
+
+  void onData(ScreenStateEvent event) {
+    setState(() {
+      _log.add(ScreenStateEventEntry(event));
     });
-  }
-
-  void getBatteryPercentage() async {
-    final level = await battery.batteryLevel;
-    percentage = level;
-
-    setState(() {});
-  }
-
-  void getBatteryState() async {
-    streamSubscription = battery.onBatteryStateChanged.listen((state) {
-      batteryState = state;
-      setState(() {});
-    });
-  }
-
-  Widget Buildbattery(BatteryState state) {
-    switch (state) {
-      case BatteryState.full:
-        return Container(
-          width: 200,
-          height: 200,
-          child: Icon(
-            Icons.battery_full,
-            size: 200,
-            color: Colors.green,
-          ),
-        );
-      case BatteryState.charging:
-        return Container(
-          width: 200,
-          height: 200,
-          child: Icon(
-            Icons.battery_charging_full,
-            size: 200,
-            color: Colors.blue,
-          ),
-        );
-      case BatteryState.discharging:
-      default:
-        return Container(
-          width: 200,
-          height: 200,
-          child: Icon(
-            Icons.battery_alert,
-            size: 200,
-            color: Colors.deepOrangeAccent,
-          ),
-        );
+    print(event);
+    if (event == 'SCREEN_ON') {
+      startTimer();
+    } else if (event == 'SCREEN_OFF') {
+      stopTimer();
     }
   }
+
+  void startListening() {
+    try {
+      _subscription = _screen.screenStateStream!.listen(onData);
+      setState(() => started = true);
+    } on ScreenStateException catch (exception) {
+      print(exception);
+    }
+  }
+
+  void reset() {
+    if (isCountdown) {
+      setState(() {
+        duration = countdownDuration;
+      });
+    } else {
+      setState(() {
+        duration = Duration();
+      });
+    }
+  }
+
+  void addTime() {
+    final addSeconds = isCountdown ? -1 : 1;
+
+    setState(() {
+      final seconds = duration.inSeconds + addSeconds;
+
+      if (seconds < 0) {
+        timer?.cancel();
+      } else {
+        duration = Duration(seconds: seconds);
+      }
+    });
+  }
+
+  void startTimer() {
+    timer = Timer.periodic(Duration(seconds: 1), (_) => addTime());
+  }
+
+  void stopTimer({bool resets = true}) {
+    if (resets) {
+      reset();
+
+      setState(() {
+        timer?.cancel();
+      });
+    }
+  }
+
+  Widget buildTime() {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        buildTimeCard(time: hours, header: 'HOURS'),
+        const SizedBox(width: 8),
+        buildTimeCard(time: minutes, header: 'MINUTES'),
+        const SizedBox(width: 8),
+        buildTimeCard(time: seconds, header: 'SECONDS'),
+      ],
+    );
+  }
+
+  Widget buildTimeCard({required String time, required String header}) =>
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              time,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                fontSize: 72,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(header),
+        ],
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -115,11 +179,11 @@ class _AnaEkranState extends State<AnaEkran> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Buildbattery(batteryState),
             Text(
-              "$percentage%",
-              style: TextStyle(fontSize: 15),
+              "You are using the screen for",
+              style: TextStyle(fontSize: 30),
             ),
+            buildTime(),
           ],
         ),
       ),
