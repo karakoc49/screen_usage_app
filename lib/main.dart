@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:screen_state/screen_state.dart';
 
@@ -61,8 +60,8 @@ class _AnaEkranState extends State<AnaEkran> {
   void initState() {
     super.initState();
     initPlatformState();
-    startTimer();
     reset();
+    startTimer();
   }
 
   Future<void> initPlatformState() async {
@@ -72,13 +71,15 @@ class _AnaEkranState extends State<AnaEkran> {
   void onData(ScreenStateEvent event) {
     setState(() {
       _log.add(ScreenStateEventEntry(event));
+      print(event);
+      if (event == 'SCREEN_ON') {
+        startTimer();
+        print("asdddd");
+      } else if (event == 'SCREEN_OFF') {
+        stopTimer();
+        print("asd");
+      }
     });
-    print(event);
-    if (event == 'SCREEN_ON') {
-      startTimer();
-    } else if (event == 'SCREEN_OFF') {
-      stopTimer();
-    }
   }
 
   void startListening() {
@@ -122,8 +123,6 @@ class _AnaEkranState extends State<AnaEkran> {
 
   void stopTimer({bool resets = true}) {
     if (resets) {
-      reset();
-
       setState(() {
         timer?.cancel();
       });
@@ -184,6 +183,11 @@ class _AnaEkranState extends State<AnaEkran> {
               style: TextStyle(fontSize: 30),
             ),
             buildTime(),
+            ElevatedButton(
+                onPressed: () {
+                  stopTimer();
+                },
+                child: Text("Stop Timer")),
           ],
         ),
       ),
