@@ -185,6 +185,11 @@ class _AnaEkranState extends State<AnaEkran> {
             buildTime(),
             ElevatedButton(
                 onPressed: () {
+                  startTimer();
+                },
+                child: Text("Start Timer")),
+            ElevatedButton(
+                onPressed: () {
                   stopTimer();
                 },
                 child: Text("Stop Timer")),
