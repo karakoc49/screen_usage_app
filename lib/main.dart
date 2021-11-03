@@ -72,12 +72,10 @@ class _AnaEkranState extends State<AnaEkran> {
     setState(() {
       _log.add(ScreenStateEventEntry(event));
       print(event);
-      if (event == 'SCREEN_ON') {
+      if (event == ScreenStateEvent.SCREEN_ON) {
         startTimer();
-        print("asdddd");
-      } else if (event == 'SCREEN_OFF') {
+      } else if (event == ScreenStateEvent.SCREEN_OFF) {
         stopTimer();
-        print("asd");
       }
     });
   }
@@ -183,7 +181,7 @@ class _AnaEkranState extends State<AnaEkran> {
               style: TextStyle(fontSize: 30),
             ),
             buildTime(),
-            ElevatedButton(
+            /*ElevatedButton(
                 onPressed: () {
                   startTimer();
                 },
@@ -192,7 +190,7 @@ class _AnaEkranState extends State<AnaEkran> {
                 onPressed: () {
                   stopTimer();
                 },
-                child: Text("Stop Timer")),
+                child: Text("Stop Timer")),*/
           ],
         ),
       ),
