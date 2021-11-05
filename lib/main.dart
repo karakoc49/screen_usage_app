@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:screen_state/screen_state.dart';
+import 'package:pausable_timer/pausable_timer.dart';
 
 void main() => runApp(const MyApp());
 
@@ -10,12 +11,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: "Screen and Battery Usage",
-      home: Iskele(),
+      title: "Screen Usage Tracker",
+      home: AnaEkran(),
     );
   }
 }
 
+/*
 class Iskele extends StatelessWidget {
   const Iskele({Key? key}) : super(key: key);
 
@@ -29,6 +31,7 @@ class Iskele extends StatelessWidget {
     );
   }
 }
+*/
 
 class AnaEkran extends StatefulWidget {
   const AnaEkran({Key? key}) : super(key: key);
@@ -54,14 +57,17 @@ class _AnaEkranState extends State<AnaEkran> {
   static const countdownDuration = Duration(hours: 3, minutes: 0, seconds: 0);
   Duration duration = Duration();
   Timer? timer;
-
   bool isCountdown = false;
+  final notificationTime = PausableTimer(Duration(seconds: 10),
+      () => print("Hello! 10 seconds has passed hooman!"));
 
   void initState() {
     super.initState();
     initPlatformState();
     reset();
     startTimer();
+    notificationTime.start();
+    resetTimer();
   }
 
   Future<void> initPlatformState() async {
@@ -74,8 +80,10 @@ class _AnaEkranState extends State<AnaEkran> {
       print(event);
       if (event == ScreenStateEvent.SCREEN_ON) {
         startTimer();
+        notificationTime.start();
       } else if (event == ScreenStateEvent.SCREEN_OFF) {
-        stopTimer();
+        pauseTimer();
+        notificationTime.pause();
       }
     });
   }
@@ -121,11 +129,24 @@ class _AnaEkranState extends State<AnaEkran> {
 
   void stopTimer({bool resets = true}) {
     if (resets) {
+      reset();
       setState(() {
         timer?.cancel();
       });
     }
   }
+
+  void pauseTimer() {
+    setState(() {
+      timer?.cancel();
+    });
+  }
+
+  void resetTimer() {
+    Timer.periodic(Duration(hours: 24), (_) => reset());
+  }
+
+  void sendNotification() {}
 
   Widget buildTime() {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
