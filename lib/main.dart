@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:screen_state/screen_state.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 
@@ -58,9 +59,34 @@ class _AnaEkranState extends State<AnaEkran> {
   Duration duration = Duration();
   Timer? timer;
   bool isCountdown = false;
-  final notificationTime = PausableTimer(Duration(seconds: 10),
-      () => print("Hello! 10 seconds has passed hooman!"));
+  final notificationTime =
+      PausableTimer(Duration(seconds: 10), () => bildirimGoster);
+  var flp = FlutterLocalNotificationsPlugin();
 
+  Future<void> kurulum() async {
+    var androidAyari = AndroidInitializationSettings("@mipmap/ic_launcher");
+    var kurulumAyari = InitializationSettings();
+
+    await flp.initialize(kurulumAyari, onSelectNotification: bildirimSecilme);
+  }
+
+  Future<void> bildirimSecilme(payLoad) async {
+    if (payLoad != null) {
+      print("Bildirim Seçildi: $payLoad");
+    }
+  }
+
+  Future<void> bildirimGoster() async {
+    var androidBildirimDetay = AndroidNotificationDetails(
+      "Kanal ID",
+      "Kanal Başlık",
+      "Kanal Açıklama",
+      priority: Priority.high,
+      importance: Importance.max,
+    );
+  }
+
+  @override
   void initState() {
     super.initState();
     initPlatformState();
@@ -68,6 +94,7 @@ class _AnaEkranState extends State<AnaEkran> {
     startTimer();
     notificationTime.start();
     resetTimer();
+    kurulum();
   }
 
   Future<void> initPlatformState() async {
