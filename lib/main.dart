@@ -59,13 +59,13 @@ class _AnaEkranState extends State<AnaEkran> {
   Duration duration = Duration();
   Timer? timer;
   bool isCountdown = false;
-  final notificationTime =
-      PausableTimer(Duration(seconds: 10), () => bildirimGoster);
+  get notificationTime => PausableTimer(Duration(seconds: 10), () => bildirimGoster());
   var flp = FlutterLocalNotificationsPlugin();
 
   Future<void> kurulum() async {
     var androidAyari = AndroidInitializationSettings("@mipmap/ic_launcher");
-    var kurulumAyari = InitializationSettings();
+    var iosAyari=IOSInitializationSettings();
+    var kurulumAyari = InitializationSettings(android: androidAyari ,iOS: iosAyari);
 
     await flp.initialize(kurulumAyari, onSelectNotification: bildirimSecilme);
   }
@@ -77,13 +77,16 @@ class _AnaEkranState extends State<AnaEkran> {
   }
 
   Future<void> bildirimGoster() async {
-    var androidBildirimDetay = AndroidNotificationDetails(
+    var androidBildirimDetay = const AndroidNotificationDetails(
       "Kanal ID",
       "Kanal Başlık",
-      "Kanal Açıklama",
+
       priority: Priority.high,
       importance: Importance.max,
     );
+    var iosBildirimDetay=IOSNotificationDetails();
+    var bildirimDetay=NotificationDetails(android: androidBildirimDetay,iOS: iosBildirimDetay);
+    await flp.show(0, "EKRAN ZAMAN AŞIMI", "10 saniyedir ekran açık", bildirimDetay);
   }
 
   @override
