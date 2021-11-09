@@ -59,35 +59,9 @@ class _AnaEkranState extends State<AnaEkran> {
   Duration duration = Duration();
   Timer? timer;
   bool isCountdown = false;
-  get notificationTime => PausableTimer(Duration(seconds: 10), () => bildirimGoster());
+  late final notificationTime =
+      PausableTimer(Duration(seconds: 10), () => bildirimGoster());
   var flp = FlutterLocalNotificationsPlugin();
-
-  Future<void> kurulum() async {
-    var androidAyari = AndroidInitializationSettings("@mipmap/ic_launcher");
-    var iosAyari=IOSInitializationSettings();
-    var kurulumAyari = InitializationSettings(android: androidAyari ,iOS: iosAyari);
-
-    await flp.initialize(kurulumAyari, onSelectNotification: bildirimSecilme);
-  }
-
-  Future<void> bildirimSecilme(payLoad) async {
-    if (payLoad != null) {
-      print("Bildirim Seçildi: $payLoad");
-    }
-  }
-
-  Future<void> bildirimGoster() async {
-    var androidBildirimDetay = const AndroidNotificationDetails(
-      "Kanal ID",
-      "Kanal Başlık",
-
-      priority: Priority.high,
-      importance: Importance.max,
-    );
-    var iosBildirimDetay=IOSNotificationDetails();
-    var bildirimDetay=NotificationDetails(android: androidBildirimDetay,iOS: iosBildirimDetay);
-    await flp.show(0, "EKRAN ZAMAN AŞIMI", "10 saniyedir ekran açık", bildirimDetay);
-  }
 
   @override
   void initState() {
@@ -176,7 +150,34 @@ class _AnaEkranState extends State<AnaEkran> {
     Timer.periodic(Duration(hours: 24), (_) => reset());
   }
 
-  void sendNotification() {}
+  Future<void> kurulum() async {
+    var androidAyari = AndroidInitializationSettings("@mipmap/ic_launcher");
+    var iosAyari = IOSInitializationSettings();
+    var kurulumAyari =
+        InitializationSettings(android: androidAyari, iOS: iosAyari);
+
+    await flp.initialize(kurulumAyari, onSelectNotification: bildirimSecilme);
+  }
+
+  Future<void> bildirimSecilme(payLoad) async {
+    if (payLoad != null) {
+      print("Bildirim Seçildi: $payLoad");
+    }
+  }
+
+  Future<void> bildirimGoster() async {
+    var androidBildirimDetay = const AndroidNotificationDetails(
+      "Kanal ID",
+      "Kanal Başlık",
+      priority: Priority.high,
+      importance: Importance.max,
+    );
+    var iosBildirimDetay = IOSNotificationDetails();
+    var bildirimDetay = NotificationDetails(
+        android: androidBildirimDetay, iOS: iosBildirimDetay);
+    await flp.show(
+        0, "EKRAN ZAMAN AŞIMI", "10 saniyedir ekran açık", bildirimDetay);
+  }
 
   Widget buildTime() {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
