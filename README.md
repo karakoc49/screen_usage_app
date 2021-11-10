@@ -1,4 +1,4 @@
-# screen_usage_app
+# Screen Usage Tracker
 
 A Flutter project to keep track of user's screen usage time.
 
