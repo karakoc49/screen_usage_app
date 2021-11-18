@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.screen_usage_app">
    <application
-        android:label="screen_usage_app"
+        android:label="Screen Usage Tracker"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

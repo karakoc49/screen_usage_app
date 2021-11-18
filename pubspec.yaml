@@ -37,6 +37,7 @@ dependencies:
   screen_state: ^2.0.0
   pausable_timer: ^1.0.0+2
   flutter_local_notifications: ^9.0.2
+  flutter_background_service: ^0.1.5
 
 dev_dependencies:
   flutter_test:

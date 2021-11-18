@@ -3,8 +3,47 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:screen_state/screen_state.dart';
 import 'package:pausable_timer/pausable_timer.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  FlutterBackgroundService.initialize(onStart);
+
+  runApp(const MyApp());
+}
+
+void onStart() {
+  WidgetsFlutterBinding.ensureInitialized();
+  final service = FlutterBackgroundService();
+  service.onDataReceived.listen((event) {
+    if (event!["action"] == "setAsForeground") {
+      service.setForegroundMode(true);
+      return;
+    }
+
+    if (event["action"] == "setAsBackground") {
+      service.setForegroundMode(false);
+    }
+
+    if (event["action"] == "stopService") {
+      service.stopBackgroundService();
+    }
+  });
+
+  // bring to foreground
+  service.setForegroundMode(true);
+  Timer.periodic(const Duration(seconds: 1), (timer) async {
+    if (!(await service.isServiceRunning())) timer.cancel();
+    service.setNotificationInfo(
+      title: "Screen Usage App",
+      content: "This app is working in the background.",
+    );
+
+    service.sendData(
+      {"current_date": DateTime.now().toIso8601String()},
+    );
+  });
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -13,7 +52,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: "Screen Usage Tracker",
-      home: AnaEkran(),
+      home: MainScreen(),
     );
   }
 }
@@ -34,11 +73,11 @@ class Iskele extends StatelessWidget {
 }
 */
 
-class AnaEkran extends StatefulWidget {
-  const AnaEkran({Key? key}) : super(key: key);
+class MainScreen extends StatefulWidget {
+  const MainScreen({Key? key}) : super(key: key);
 
   @override
-  _AnaEkranState createState() => _AnaEkranState();
+  _MainScreenState createState() => _MainScreenState();
 }
 
 class ScreenStateEventEntry {
@@ -50,28 +89,29 @@ class ScreenStateEventEntry {
   }
 }
 
-class _AnaEkranState extends State<AnaEkran> {
-  Screen _screen = Screen();
+class _MainScreenState extends State<MainScreen> {
+  final Screen _screen = Screen();
   late StreamSubscription<ScreenStateEvent> _subscription;
   bool started = false;
-  List<ScreenStateEventEntry> _log = [];
+  final List<ScreenStateEventEntry> _log = [];
   static const countdownDuration = Duration(hours: 3, minutes: 0, seconds: 0);
-  Duration duration = Duration();
+  Duration duration = const Duration();
   Timer? timer;
   bool isCountdown = false;
-  late final notificationTime =
-      PausableTimer(Duration(seconds: 10), () => bildirimGoster());
+  late final notificationTime = PausableTimer(
+      Duration(seconds: notificationTimerDurationSec),
+      () => showNotification());
   var flp = FlutterLocalNotificationsPlugin();
+  int notificationTimerDurationSec = 10;
 
   @override
   void initState() {
     super.initState();
     initPlatformState();
-    reset();
     startTimer();
     notificationTime.start();
     resetTimer();
-    kurulum();
+    setup();
   }
 
   Future<void> initPlatformState() async {
@@ -108,7 +148,7 @@ class _AnaEkranState extends State<AnaEkran> {
       });
     } else {
       setState(() {
-        duration = Duration();
+        duration = const Duration();
       });
     }
   }
@@ -128,7 +168,7 @@ class _AnaEkranState extends State<AnaEkran> {
   }
 
   void startTimer() {
-    timer = Timer.periodic(Duration(seconds: 1), (_) => addTime());
+    timer = Timer.periodic(const Duration(seconds: 1), (_) => addTime());
   }
 
   void stopTimer({bool resets = true}) {
@@ -147,36 +187,41 @@ class _AnaEkranState extends State<AnaEkran> {
   }
 
   void resetTimer() {
-    Timer.periodic(Duration(hours: 24), (_) => reset());
+    Timer.periodic(const Duration(hours: 24), (_) => reset());
   }
 
-  Future<void> kurulum() async {
-    var androidAyari = AndroidInitializationSettings("@mipmap/ic_launcher");
-    var iosAyari = IOSInitializationSettings();
-    var kurulumAyari =
-        InitializationSettings(android: androidAyari, iOS: iosAyari);
+  Future<void> setup() async {
+    var androidSetting =
+        const AndroidInitializationSettings("@mipmap/ic_launcher");
+    var iosSetting = const IOSInitializationSettings();
+    var setupSetting =
+        InitializationSettings(android: androidSetting, iOS: iosSetting);
 
-    await flp.initialize(kurulumAyari, onSelectNotification: bildirimSecilme);
+    await flp.initialize(setupSetting,
+        onSelectNotification: selectNotification);
   }
 
-  Future<void> bildirimSecilme(payLoad) async {
+  Future<void> selectNotification(payLoad) async {
     if (payLoad != null) {
-      print("Bildirim Seçildi: $payLoad");
+      print("Notification Selected: $payLoad");
     }
   }
 
-  Future<void> bildirimGoster() async {
-    var androidBildirimDetay = const AndroidNotificationDetails(
-      "Kanal ID",
-      "Kanal Başlık",
+  Future<void> showNotification() async {
+    var androidNotificationDetail = const AndroidNotificationDetails(
+      "Channel ID",
+      "Channel Title",
       priority: Priority.high,
       importance: Importance.max,
     );
-    var iosBildirimDetay = IOSNotificationDetails();
-    var bildirimDetay = NotificationDetails(
-        android: androidBildirimDetay, iOS: iosBildirimDetay);
+    var iosNotificationDetail = const IOSNotificationDetails();
+    var notificationDetail = NotificationDetails(
+        android: androidNotificationDetail, iOS: iosNotificationDetail);
     await flp.show(
-        0, "EKRAN ZAMAN AŞIMI", "10 saniyedir ekran açık", bildirimDetay);
+        0,
+        "🕒 SCREEN TIMEOUT 🕒",
+        "The screen is on for $notificationTimerDurationSec seconds.",
+        notificationDetail);
   }
 
   Widget buildTime() {
@@ -202,14 +247,14 @@ class _AnaEkranState extends State<AnaEkran> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.grey,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               time,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
                 fontSize: 72,
@@ -228,7 +273,7 @@ class _AnaEkranState extends State<AnaEkran> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               "You are using the screen for",
               style: TextStyle(fontSize: 30),
             ),
