@@ -3,46 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:screen_state/screen_state.dart';
 import 'package:pausable_timer/pausable_timer.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_background/flutter_background.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  FlutterBackgroundService.initialize(onStart);
-
+void main() async {
   runApp(const MyApp());
-}
-
-void onStart() {
-  WidgetsFlutterBinding.ensureInitialized();
-  final service = FlutterBackgroundService();
-  service.onDataReceived.listen((event) {
-    if (event!["action"] == "setAsForeground") {
-      service.setForegroundMode(true);
-      return;
-    }
-
-    if (event["action"] == "setAsBackground") {
-      service.setForegroundMode(false);
-    }
-
-    if (event["action"] == "stopService") {
-      service.stopBackgroundService();
-    }
-  });
-
-  // bring to foreground
-  service.setForegroundMode(true);
-  Timer.periodic(const Duration(seconds: 1), (timer) async {
-    if (!(await service.isServiceRunning())) timer.cancel();
-    service.setNotificationInfo(
-      title: "Screen Usage App",
-      content: "This app is working in the background.",
-    );
-
-    service.sendData(
-      {"current_date": DateTime.now().toIso8601String()},
-    );
-  });
+  final androidConfig = FlutterBackgroundAndroidConfig(
+    notificationTitle: "Screen Usage App",
+    notificationText: "I'm still running to keep track of your screen usage!",
+    notificationImportance: AndroidNotificationImportance.Default,
+    notificationIcon: AndroidResource(
+        name: 'background_icon',
+        defType: 'drawable'), // Default is ic_launcher from folder mipmap
+  );
+  bool initializeFunction =
+      await FlutterBackground.initialize(androidConfig: androidConfig);
+  bool backgroundFunction = await FlutterBackground.enableBackgroundExecution();
 }
 
 class MyApp extends StatelessWidget {
@@ -56,22 +31,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-/*
-class Iskele extends StatelessWidget {
-  const Iskele({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Screen and Battery Usage Info App"),
-      ),
-      body: const AnaEkran(),
-    );
-  }
-}
-*/
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
